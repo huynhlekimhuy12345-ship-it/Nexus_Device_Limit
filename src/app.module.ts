@@ -6,6 +6,7 @@ import { HealthModule } from './health/health.module';
 import { SessionModule } from './session/session.module';
 import { PinModule } from './pin/pin.module';
 import { DevicesModule } from './devices/devices.module';
+import { DeviceLimitModule } from './device-limit/device-limit.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DevicesModule } from './devices/devices.module';
     SessionModule,
     PinModule,
     DevicesModule,
+    DeviceLimitModule,
   ],
 })
 export class AppModule {}

@@ -187,6 +187,66 @@ export class SessionService {
   }
 
   /**
+   * Lấy danh sách session của user theo deviceClass kèm thông tin fingerprint
+   */
+  async getSessionsByClass(
+    userId: string,
+    deviceClass: 'mobile' | 'desktop' | 'tablet',
+  ): Promise<
+    {
+      sessionId: string;
+      deviceClass: string;
+      deviceFingerprint: string;
+      deviceLabel: string;
+      lastSeenAt: string;
+    }[]
+  > {
+    const redis = this.redisService.getClient();
+    const userDevicesKey = `user:${userId}:devices`;
+    const sessionIds = await redis.smembers(userDevicesKey);
+
+    if (sessionIds.length === 0) {
+      return [];
+    }
+
+    const results: {
+      sessionId: string;
+      deviceClass: string;
+      deviceFingerprint: string;
+      deviceLabel: string;
+      lastSeenAt: string;
+    }[] = [];
+    const expiredIds: string[] = [];
+
+    for (const id of sessionIds) {
+      const data = await redis.hmget(
+        `session:${id}`,
+        'device_class',
+        'device_fingerprint',
+        'device_label',
+        'last_seen_at',
+      );
+      if (!data[0]) {
+        expiredIds.push(id);
+      } else if (data[0] === deviceClass) {
+        results.push({
+          sessionId: id,
+          deviceClass: data[0],
+          deviceFingerprint: data[1] ?? '',
+          deviceLabel: data[2] ?? '',
+          lastSeenAt: data[3] ?? '',
+        });
+      }
+    }
+
+    if (expiredIds.length > 0) {
+      await redis.srem(userDevicesKey, ...expiredIds);
+    }
+
+    return results;
+  }
+
+  /**
    * Lấy danh sách session hợp lệ của user
    */
   async listDevices(userId: string): Promise<DeviceSummary[]> {
