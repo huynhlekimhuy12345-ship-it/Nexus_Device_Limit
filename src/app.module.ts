@@ -4,6 +4,8 @@ import configuration from './config/configuration';
 import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
 import { SessionModule } from './session/session.module';
+import { PinModule } from './pin/pin.module';
+import { DevicesModule } from './devices/devices.module';
 
 @Module({
   imports: [
@@ -14,7 +16,10 @@ import { SessionModule } from './session/session.module';
     RedisModule,
     HealthModule,
     SessionModule,
+    PinModule,
+    DevicesModule,
   ],
 })
 export class AppModule {}
+
 
