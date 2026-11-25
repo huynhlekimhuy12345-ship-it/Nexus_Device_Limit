@@ -81,6 +81,35 @@ describe('SessionService (Redis Session Store)', () => {
       expect(session?.lastSeenAt).toBeDefined();
     });
 
+    it('login lại cùng fingerprint -> EXISTING, TTL và last_seen_at được gia hạn', async () => {
+      const fp = createDeviceFingerprint('Mozilla/5.0 (iPhone)', 5, 390, 844);
+      const sessionId = createdSessionIds[0];
+
+      // Giả lập session sắp hết hạn + last_seen_at cũ
+      const redis = redisService.getClient();
+      await redis.expire(`session:${sessionId}`, 30);
+      await redis.hset(
+        `session:${sessionId}`,
+        'last_seen_at',
+        '2000-01-01T00:00:00.000Z',
+      );
+
+      const result = await sessionService.createSessionIfAllowed({
+        userId: testUserId,
+        ip: '192.168.1.100',
+        deviceClass: 'mobile',
+        deviceFingerprint: fp,
+        deviceLabel: 'iPhone',
+      });
+      expect(result.status).toBe('EXISTING');
+      expect(result.sessionId).toBe(sessionId);
+
+      const ttl = await redis.ttl(`session:${sessionId}`);
+      expect(ttl).toBeGreaterThan(590);
+      const lastSeen = await redis.hget(`session:${sessionId}`, 'last_seen_at');
+      expect(lastSeen).not.toBe('2000-01-01T00:00:00.000Z');
+    });
+
     it('đọc lại session -> last_seen_at được cập nhật', async () => {
       const sessionId = createdSessionIds[0];
       const sessionFirst = await sessionService.getSession(sessionId);

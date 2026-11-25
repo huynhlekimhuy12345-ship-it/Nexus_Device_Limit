@@ -43,6 +43,8 @@ export interface DeviceSummary {
  * ARGV[8] = TTL (giây)
  *
  * Trả về {'CREATED', sessionId} | {'EXISTING', sessionId} | {'LIMIT', ''}.
+ * EXISTING: session cũ được gia hạn TTL + cập nhật last_seen_at (login lại
+ * cùng máy cũng là hoạt động — phải refresh như getSession vẫn làm).
  * Session hết hạn (key đã mất) được dọn khỏi SET ngay trong script.
  */
 const CREATE_SESSION_IF_ALLOWED_LUA = `
@@ -57,6 +59,11 @@ for _, sid in ipairs(members) do
     count = count + 1
     local fp = redis.call('HGET', key, 'device_fingerprint')
     if fp == ARGV[4] then
+      -- Login lại cùng máy: dùng lại session cũ NHƯNG gia hạn TTL +
+      -- cập nhật last_seen_at (giữ đúng hành vi cũ của đường check ->
+      -- getSession, vốn refresh mỗi lần login lại).
+      redis.call('HSET', key, 'last_seen_at', ARGV[7])
+      redis.call('EXPIRE', key, ARGV[8])
       return {'EXISTING', sid}
     end
   end
