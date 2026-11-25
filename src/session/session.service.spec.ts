@@ -145,4 +145,14 @@ describe('SessionService (Redis Session Store)', () => {
       );
     });
   });
+
+  describe('createDeviceFingerprint', () => {
+    it('2 bộ input khác nhau nhưng nối chuỗi không dấu phân cách sẽ trùng -> fingerprint phải khác nhau', () => {
+      // UA "ab" + touch 12 vs UA "ab1" + touch 2: không có dấu phân cách thì
+      // cả 2 đều ra chuỗi raw "ab120x0" -> cùng 1 fingerprint (nhận nhầm máy).
+      const fp1 = createDeviceFingerprint('ab', 12, 0, 0);
+      const fp2 = createDeviceFingerprint('ab1', 2, 0, 0);
+      expect(fp1).not.toBe(fp2);
+    });
+  });
 });
